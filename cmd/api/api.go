@@ -39,32 +39,38 @@ func (app *application) mount() *chi.Mux {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
+		// Health check route
 		r.Get("/health", app.healthCheckerHandler)
 
+		// Posts-related routes
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
 
 			r.Route("/{postID}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
-				
+
 				r.Get("/", app.getPostHandler)
 				r.Delete("/", app.deletePostHandler)
 				r.Patch("/", app.updatePostHandler)
 			})
 		})
 
+		// Users-related routes
 		r.Route("/users", func(r chi.Router) {
+			// User-specific routes with userID
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.userContextMiddleware)
 
 				r.Get("/", app.getUserHandler)
 				r.Put("/follow", app.followUserHandler)
 				r.Put("/unfollow", app.unfollowedUserHandler)
-			}) 
+			})
 
+			// Feed route
+			r.Get("/feed", app.getUserFeedHandler)
 		})
 	})
-	
+
 	return r
 }
 
