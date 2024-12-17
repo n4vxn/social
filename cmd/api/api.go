@@ -1,24 +1,30 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap"
+
 	"github.com/n4vxn/social/internal/store"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+	"github.com/swaggo/swag/example/basic/docs"
 )
 
 type application struct {
 	config config
 	store  store.Storage
+	logger *zap.SugaredLogger
 }
 
 type config struct {
-	addr string
-	db   dbConfig
-	env  string
+	addr   string
+	db     dbConfig
+	env    string
+	apiURL string
 }
 
 type dbConfig struct {
@@ -35,13 +41,32 @@ func (app *application) mount() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-
 	r.Use(middleware.Timeout(60 * time.Second))
+
+	//	@title			Social API
+	//	@description	This is a social network.
+	//	@termsOfService	http://swagger.io/terms/
+
+	//	@contact.name	API Support
+	//	@contact.url	http://www.swagger.io/support
+	//	@contact.email	support@swagger.io
+
+	//	@license.name	Apache 2.0
+	//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+	//	@BasePath					/v1
+	//
+	//	@securityDefinitions.apikey	ApiKeyAuth
+	//	@in							header
+	//	@name						Authorization
+	//	@description
 
 	r.Route("/v1", func(r chi.Router) {
 		// Health check route
 		r.Get("/health", app.healthCheckerHandler)
 
+		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 		// Posts-related routes
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
@@ -68,6 +93,10 @@ func (app *application) mount() *chi.Mux {
 
 			// Feed route
 			r.Get("/feed", app.getUserFeedHandler)
+
+			r.Route("/authentication", func(r chi.Router) {
+				r.Post("/user", app.registerUserHandler)
+			})
 		})
 	})
 
@@ -75,6 +104,10 @@ func (app *application) mount() *chi.Mux {
 }
 
 func (app *application) run(mux *chi.Mux) error {
+	//Docs
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Host = app.config.apiURL
+	docs.SwaggerInfo.BasePath = "/v1"
 	srv := http.Server{
 		Addr:         app.config.addr,
 		Handler:      mux,
@@ -82,6 +115,6 @@ func (app *application) run(mux *chi.Mux) error {
 		ReadTimeout:  time.Second * 10,
 		IdleTimeout:  time.Minute,
 	}
-	log.Printf("Server started running at port %s", app.config.addr)
+	app.logger.Infow("server has started", "addr", app.config.addr, "env", app.config.env)
 	return srv.ListenAndServe()
 }
