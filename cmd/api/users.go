@@ -28,6 +28,11 @@ type FollowUser struct {
 
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 	followUser := getUserFromContext(r)
+	followedID, err := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
 
 	var payload FollowUser
 	if err := readJSON(w, r, &payload); err != nil {
@@ -37,7 +42,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 
 	ctx := r.Context()
 
-	if err := app.store.Followers.Follow(ctx, followUser.ID, payload.UserID); err != nil {
+	if err := app.store.Followers.Follow(ctx, followUser.ID, followedID); err != nil {
 		switch err {
 		case store.ErrConfllict:
 			app.conflictResponse(w, r, err)
@@ -53,7 +58,12 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) unfollowedUserHandler(w http.ResponseWriter, r *http.Request) {
-	unfollowedUser := getUserFromContext(r)
+	followUser := getUserFromContext(r)
+	unfollowedID, err := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
 
 	var payload FollowUser
 	if err := readJSON(w, r, &payload); err != nil {
@@ -63,7 +73,7 @@ func (app *application) unfollowedUserHandler(w http.ResponseWriter, r *http.Req
 
 	ctx := r.Context()
 
-	if err := app.store.Followers.UnFollow(ctx, unfollowedUser.ID, payload.UserID); err != nil {
+	if err := app.store.Followers.UnFollow(ctx, followUser.ID, unfollowedID); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -71,25 +81,6 @@ func (app *application) unfollowedUserHandler(w http.ResponseWriter, r *http.Req
 	if err := app.jsonResponse(w, http.StatusOK, nil); err != nil {
 		app.internalServerError(w, r, err)
 	}
-}
-
-func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
-	token := chi.URLParam(r, "token")
-
-	 err := app.store.Users.Activate(r.Context(), token)
-	 if err != nil {
-		switch err {
-		case store.ErrNotFound:
-			app.notFoundResponse(w, r, err)
-		default:
-			app.internalServerError(w, r, err)
-		}
-	}
-
-	if err := app.jsonResponse(w, http.StatusNoContent, ""); err != nil {
-		app.internalServerError(w, r, err)
-	}
-
 }
 
 func (app *application) userContextMiddleware(next http.Handler) http.Handler {
