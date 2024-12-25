@@ -43,10 +43,6 @@ The backend uses JWT for secure session management and leverages GORM for databa
 - **POST `/auth/logout`:** Logout and invalidate the JWT cookie.
 - **POST `/auth/forgot-password`:** Request a password reset email.
 - **POST `/auth/reset-password/{token}`:** Reset the user password using the token.
-- **GET `/auth/google/login`:** Initiate login with Google OAuth.
-- **GET `/auth/google/callback`:** Handle Google OAuth callback.
-- **GET `/auth/github/login`:** Initiate login with GitHub OAuth.
-- **GET `/auth/github/callback`:** Handle GitHub OAuth callback.
 
 ### Post Routes
 - **GET `/api/v1/posts`:** Retrieve all posts with optional pagination.
@@ -56,8 +52,6 @@ The backend uses JWT for secure session management and leverages GORM for databa
 - **DELETE `/api/v1/posts/{postID}`:** Delete a post.
 - **POST `/api/v1/posts/{postID}/like`:** Like a post.
 - **DELETE `/api/v1/posts/{postID}/like`:** Remove like from a post.
-- **POST `/api/v1/posts/{postID}/dislike`:** Dislike a post.
-- **DELETE `/api/v1/posts/{postID}/dislike`:** Remove dislike from a post.
 
 ### Comment Routes
 - **GET `/api/v1/comments/{commentID}`:** Retrieve a specific comment.
@@ -65,5 +59,3 @@ The backend uses JWT for secure session management and leverages GORM for databa
 - **POST `/api/v1/posts/{postID}/comments`:** Add a new comment to a post.
 - **PUT `/api/v1/comments/{commentID}`:** Update a comment.
 - **DELETE `/api/v1/comments/{commentID}`:** Delete a comment.
-- **POST `/api/v1/comments/{commentID}/like`:** Like a comment.
-- **DELETE `/api/v1/comments/{commentID}/like`:** Remove like from a comment.
